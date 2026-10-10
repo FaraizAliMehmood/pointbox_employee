@@ -617,13 +617,6 @@ const RedeemPoints = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">{t('redeemPoints.title')}</h1>
-        <button
-          onClick={() => setShowInvoiceScanner(true)}
-          className="bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap shrink-0"
-        >
-          <Camera size={18} />
-          Scan Invoice
-        </button>
       </div>
 
       {/* Search Method Tabs */}
@@ -782,7 +775,17 @@ const RedeemPoints = () => {
       {/* Redeem Form */}
       {customer && isVerified && (
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-4 lg:p-6 space-y-6">
-          <h2 className="text-xl font-bold text-gray-800">{t('redeemPoints.title')}</h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-xl font-bold text-gray-800">{t('redeemPoints.title')}</h2>
+            <button
+              type="button"
+              onClick={() => setShowInvoiceScanner(true)}
+              className="bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap shrink-0"
+            >
+              <Camera size={18} />
+              Scan Invoice
+            </button>
+          </div>
 
           {submitError && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
