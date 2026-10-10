@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { Search, QrCode, CheckCircle2, XCircle, Upload, X } from 'lucide-react';
-import { employeeApiService } from '../services/apiService';
+import { Search, QrCode, CheckCircle2, XCircle, Upload, X, Camera } from 'lucide-react';
+import { employeeApiService, type InvoiceScanResult } from '../services/apiService';
 import CustomDialog from '../components/CustomDialog';
+import InvoiceScannerModal from '../components/InvoiceScannerModal';
 import { Html5Qrcode } from 'html5-qrcode';
 import { usePermissions } from '../hooks/usePermissions';
 import PermissionDenied from '../components/PermissionDenied';
@@ -98,6 +99,7 @@ const RedeemPoints = () => {
   const [cameraPermissionState, setCameraPermissionState] = useState<'granted' | 'denied' | 'prompt' | 'unknown'>('unknown');
 
   const [invoicePreview, setInvoicePreview] = useState<string | null>(null);
+  const [showInvoiceScanner, setShowInvoiceScanner] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -489,6 +491,20 @@ const RedeemPoints = () => {
     }
   };
 
+  const handleApplyScannedInvoice = (result: InvoiceScanResult, imageFile: File) => {
+    setFormData(prev => ({
+      ...prev,
+      invoiceNumber: result.invoiceNumber || prev.invoiceNumber,
+      invoiceImage: imageFile,
+    }));
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setInvoicePreview(reader.result as string);
+    };
+    reader.readAsDataURL(imageFile);
+    setShowInvoiceScanner(false);
+  };
+
   const handleTypeChange = (type: 'earn' | 'redeem') => {
     setFormData(prev => ({
       ...prev,
@@ -593,7 +609,16 @@ const RedeemPoints = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">{t('redeemPoints.title')}</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">{t('redeemPoints.title')}</h1>
+        <button
+          onClick={() => setShowInvoiceScanner(true)}
+          className="bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 text-white px-4 py-2.5 rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 self-start sm:self-auto"
+        >
+          <Camera size={18} />
+          Scan Invoice
+        </button>
+      </div>
 
       {/* Search Method Tabs */}
       <div className="flex gap-4 border-b border-gray-200">
@@ -1017,6 +1042,12 @@ const RedeemPoints = () => {
           </div>
         </div>
       )}
+
+      <InvoiceScannerModal
+        open={showInvoiceScanner}
+        onClose={() => setShowInvoiceScanner(false)}
+        onApply={handleApplyScannedInvoice}
+      />
 
       <CustomDialog
         open={dialogOpen}

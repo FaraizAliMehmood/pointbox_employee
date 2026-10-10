@@ -23,6 +23,9 @@ export const API_ENDPOINTS = {
       ADD: '/employee/add-points',
       HISTORY: '/employee/redeem-history',
     },
+    INVOICE: {
+      SCAN: '/employee/scan-invoice',
+    },
     PROFILE: {
       UPDATE_PASSWORD: '/employee/update-password',
     },

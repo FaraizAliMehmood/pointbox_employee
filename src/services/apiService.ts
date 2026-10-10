@@ -34,6 +34,15 @@ interface LoginResponse {
   };
 }
 
+export interface InvoiceScanResult {
+  invoiceNumber: string | null;
+  phoneNumbers: string[];
+  amount: number | null;
+  currency: string | null;
+  amountLabel: string | null;
+  needsVerification: boolean;
+}
+
 interface VerifyCustomerResponse {
   success: boolean;
   customer?: {
@@ -535,6 +544,48 @@ class EmployeeApiService {
         throw error;
       }
       throw new Error(error.message || 'Failed to add points');
+    }
+  }
+
+  /**
+   * Scan a captured invoice photo and extract invoice number, phone number(s) and amount via Gemini
+   */
+  async scanInvoice(imageFile: File | Blob): Promise<{ success: boolean; data?: InvoiceScanResult; message?: string }> {
+    const formData = new FormData();
+    formData.append('invoice', imageFile, 'invoice.jpg');
+
+    const token = this.getToken();
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    const url = `${this.baseURL}${API_ENDPOINTS.EMPLOYEE.INVOICE.SCAN}`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+      }
+
+      return {
+        success: data.success || false,
+        data: data.data,
+        message: data.message,
+      };
+    } catch (error: any) {
+      if (error.status) {
+        throw error;
+      }
+      throw new Error(error.message || 'Failed to scan invoice');
     }
   }
 
