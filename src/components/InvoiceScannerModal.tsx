@@ -189,8 +189,8 @@ const InvoiceScannerModal = ({ open, onClose, onApply }: InvoiceScannerModalProp
   if (!open) return null;
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 p-2 sm:p-4 rounded-lg">
-      <div className="bg-white rounded-xl shadow-2xl w-full h-full max-w-5xl flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 sm:p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full h-full max-w-5xl max-h-[95vh] flex flex-col overflow-hidden">
         <div className="shrink-0 px-6 py-4 bg-purple-50 border-b border-purple-100 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-purple-700">
             {step === 'camera' && 'Scan Invoice'}
