@@ -44,13 +44,28 @@ const InvoiceScannerModal = ({ open, onClose, onApply }: InvoiceScannerModalProp
     try {
       let stream: MediaStream;
       try {
+        // Request a high-resolution stream - without explicit width/height
+        // constraints many mobile browsers default to a low-res (e.g. 640x480)
+        // stream, which is too blurry for the AI to read small invoice text
+        // (invoice numbers, phone numbers) accurately.
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' } },
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 3840 },
+            height: { ideal: 2160 },
+          },
           audio: false,
         });
       } catch (err: any) {
         if (err.name === 'OverconstrainedError') {
-          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: { ideal: 'environment' } },
+              audio: false,
+            });
+          } catch {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          }
         } else {
           throw err;
         }
@@ -174,9 +189,9 @@ const InvoiceScannerModal = ({ open, onClose, onApply }: InvoiceScannerModalProp
   if (!open) return null;
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 p-4 rounded-lg">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden">
-        <div className="px-6 py-4 bg-purple-50 border-b border-purple-100 flex items-center justify-between">
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 p-2 sm:p-4 rounded-lg">
+      <div className="bg-white rounded-xl shadow-2xl w-full h-full max-w-5xl flex flex-col overflow-hidden">
+        <div className="shrink-0 px-6 py-4 bg-purple-50 border-b border-purple-100 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-purple-700">
             {step === 'camera' && 'Scan Invoice'}
             {step === 'preview' && 'Review Photo'}
@@ -189,27 +204,27 @@ const InvoiceScannerModal = ({ open, onClose, onApply }: InvoiceScannerModalProp
           </button>
         </div>
 
-        <div className="px-6 py-4">
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
           {step === 'camera' && (
-            <div className="space-y-3">
+            <div className="h-full flex flex-col gap-3">
               {cameraError ? (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                   {cameraError}
                 </div>
               ) : (
-                <div className="relative w-full h-72 bg-black rounded-lg overflow-hidden">
+                <div className="relative flex-1 min-h-[300px] w-full bg-black rounded-lg overflow-hidden">
                   {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                   <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
                   <div className="absolute inset-4 border-2 border-dashed border-white/70 rounded-lg pointer-events-none" />
                 </div>
               )}
-              <p className="text-xs text-gray-500 text-center">Align the invoice inside the frame, then capture.</p>
+              <p className="shrink-0 text-xs text-gray-500 text-center">Align the invoice inside the frame, then capture.</p>
             </div>
           )}
 
           {step === 'preview' && capturedImage && (
-            <div className="space-y-3">
-              <img src={capturedImage} alt="Captured invoice" className="w-full max-h-80 object-contain rounded-lg border border-gray-200" />
+            <div className="h-full">
+              <img src={capturedImage} alt="Captured invoice" className="w-full h-full object-contain rounded-lg border border-gray-200" />
             </div>
           )}
 
@@ -267,7 +282,7 @@ const InvoiceScannerModal = ({ open, onClose, onApply }: InvoiceScannerModalProp
           )}
         </div>
 
-        <div className="px-6 py-3 bg-gray-50 flex justify-end gap-3">
+        <div className="shrink-0 px-6 py-3 bg-gray-50 flex justify-end gap-3">
           {step === 'camera' && (
             <>
               <button
