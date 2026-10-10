@@ -31,6 +31,7 @@ interface LoginResponse {
       manageBanners?: boolean;
       manageNotifications?: boolean;
     };
+    aiApiEnabled?: boolean;
   };
 }
 
@@ -473,6 +474,7 @@ class EmployeeApiService {
         email: loginUser.email || '',
         company: loginUser.company || null,
         permissions: loginUser.permissions || {},
+        aiApiEnabled: loginUser.aiApiEnabled || false,
       },
     };
   }

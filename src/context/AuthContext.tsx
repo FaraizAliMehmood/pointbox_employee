@@ -50,6 +50,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           isActive: true,
           createdAt: new Date().toISOString(),
           permissions: response.user.permissions || {},
+          aiApiEnabled: response.user.aiApiEnabled || false,
         };
         
         setUser(userData);

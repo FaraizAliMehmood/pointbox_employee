@@ -726,26 +726,28 @@ const RedeemPoints = () => {
         >
           {t('redeemPoints.byQR')}
         </button>
-        <button
-          onClick={async () => {
-            if (isScanning) {
-              await stopQRScan();
-            }
-            setSearchMethod('ai');
-            setVerificationError('');
-            setCameraError('');
-            setCustomer(null);
-            setIsVerified(false);
-            setLinkedCompanies([]);
-          }}
-          className={`px-4 py-2 font-medium transition-colors ${
-            searchMethod === 'ai'
-              ? 'border-b-2 border-purple-600 text-purple-600'
-              : 'text-gray-600 hover:text-gray-800'
-          }`}
-        >
-          {t('redeemPoints.byAI') || 'Scan By AI'}
-        </button>
+        {user?.aiApiEnabled && (
+          <button
+            onClick={async () => {
+              if (isScanning) {
+                await stopQRScan();
+              }
+              setSearchMethod('ai');
+              setVerificationError('');
+              setCameraError('');
+              setCustomer(null);
+              setIsVerified(false);
+              setLinkedCompanies([]);
+            }}
+            className={`px-4 py-2 font-medium transition-colors ${
+              searchMethod === 'ai'
+                ? 'border-b-2 border-purple-600 text-purple-600'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            {t('redeemPoints.byAI') || 'Scan By AI'}
+          </button>
+        )}
       </div>
 
       {/* Phone Search */}

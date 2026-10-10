@@ -63,6 +63,7 @@ export interface User {
   isActive: boolean;
   createdAt: string;
   permissions?: EmployeePermissions;
+  aiApiEnabled?: boolean;
 }
 
 export interface Product {
