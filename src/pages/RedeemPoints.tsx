@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { Search, QrCode, CheckCircle2, XCircle, Upload, X, Camera, Sparkles } from 'lucide-react';
+import { Search, QrCode, CheckCircle2, XCircle, X, Sparkles } from 'lucide-react';
 import { employeeApiService, type InvoiceScanResult } from '../services/apiService';
 import CustomDialog from '../components/CustomDialog';
 import InvoiceScannerModal from '../components/InvoiceScannerModal';
+import RedeemPointsForm from '../components/RedeemPointsForm';
 import { Html5Qrcode } from 'html5-qrcode';
 import { usePermissions } from '../hooks/usePermissions';
 import PermissionDenied from '../components/PermissionDenied';
@@ -99,7 +100,6 @@ const RedeemPoints = () => {
   const [cameraPermissionState, setCameraPermissionState] = useState<'granted' | 'denied' | 'prompt' | 'unknown'>('unknown');
 
   const [invoicePreview, setInvoicePreview] = useState<string | null>(null);
-  const [showInvoiceScanner, setShowInvoiceScanner] = useState(false);
   const [showAIScanner, setShowAIScanner] = useState(false);
 
   useEffect(() => {
@@ -496,26 +496,6 @@ const RedeemPoints = () => {
     }
   };
 
-  const handleApplyScannedInvoice = (result: InvoiceScanResult, imageFile: File) => {
-    // A scanned amount is independent of any selected product, so clear the
-    // product selection so the redeem_points field becomes editable again.
-    if (result.amount !== null) {
-      setSelectedProductId('');
-    }
-    setFormData(prev => ({
-      ...prev,
-      invoiceNumber: result.invoiceNumber || prev.invoiceNumber,
-      redeem_points: result.amount !== null ? result.amount.toString() : prev.redeem_points,
-      invoiceImage: imageFile,
-    }));
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setInvoicePreview(reader.result as string);
-    };
-    reader.readAsDataURL(imageFile);
-    setShowInvoiceScanner(false);
-  };
-
   const handleApplyAIScan = (result: InvoiceScanResult, imageFile: File) => {
     setShowAIScanner(false);
 
@@ -546,6 +526,25 @@ const RedeemPoints = () => {
     reader.readAsDataURL(imageFile);
 
     verifyCustomerByPhone(scannedPhone);
+  };
+
+  const handleCancelForm = () => {
+    setCustomer(null);
+    setIsVerified(false);
+    setFormData({
+      invoiceNumber: '',
+      companyId: formData.companyId,
+      type: 'earn',
+      redeem_points: '',
+      date: new Date().toISOString().split('T')[0],
+      time: new Date().toTimeString().slice(0, 5),
+      invoiceImage: null,
+      notes: '',
+    });
+    setInvoicePreview(null);
+    setLinkedCompanies([]);
+    setSelectedProductId('');
+    setSubmitError('');
   };
 
   const handleTypeChange = (type: 'earn' | 'redeem') => {
@@ -854,224 +853,59 @@ const RedeemPoints = () => {
         </div>
       )}
 
-      {/* Redeem Form */}
-      {customer && isVerified && (
-        <form onSubmit={handleSubmit} className="relative bg-white rounded-lg shadow-md p-4 lg:p-6 space-y-6">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-xl font-bold text-gray-800">{t('redeemPoints.title')}</h2>
-            <button
-              type="button"
-              onClick={() => setShowInvoiceScanner(true)}
-              className="bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap shrink-0"
-            >
-              <Camera size={18} />
-              Scan Invoice
-            </button>
-          </div>
+      {/* Redeem Form (Phone / QR) */}
+      {customer && isVerified && searchMethod !== 'ai' && (
+        <RedeemPointsForm
+          title={t('redeemPoints.title')}
+          customer={customer}
+          formData={formData}
+          setFormData={setFormData}
+          submitError={submitError}
+          submitting={submitting}
+          selectedProductId={selectedProductId}
+          products={products}
+          loadingProducts={loadingProducts}
+          handleTypeChange={handleTypeChange}
+          handleProductChange={handleProductChange}
+          handleImageUpload={handleImageUpload}
+          invoicePreview={invoicePreview}
+          setInvoicePreview={setInvoicePreview}
+          onSubmit={handleSubmit}
+          onCancel={handleCancelForm}
+          t={t}
+        />
+      )}
 
-          {submitError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-              {submitError}
+      {/* Redeem Form (Scan By AI) */}
+      {customer && isVerified && searchMethod === 'ai' && (
+        <RedeemPointsForm
+          title={t('redeemPoints.scanByAITitle')}
+          customer={customer}
+          formData={formData}
+          setFormData={setFormData}
+          submitError={submitError}
+          submitting={submitting}
+          selectedProductId={selectedProductId}
+          products={products}
+          loadingProducts={loadingProducts}
+          handleTypeChange={handleTypeChange}
+          handleProductChange={handleProductChange}
+          handleImageUpload={handleImageUpload}
+          invoicePreview={invoicePreview}
+          setInvoicePreview={setInvoicePreview}
+          onSubmit={handleSubmit}
+          onCancel={handleCancelForm}
+          t={t}
+          infoBanner={
+            <div className="flex items-center gap-2 bg-purple-50 border border-purple-200 text-purple-700 px-4 py-3 rounded-lg text-sm">
+              <Sparkles size={18} className="shrink-0" />
+              <span>
+                {t('redeemPoints.aiPrefilledHint') ||
+                  'Invoice number and amount were auto-filled from your AI scan. Please verify before submitting.'}
+              </span>
             </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('redeemPoints.transactionType') || 'Transaction Type'} *
-              </label>
-              <select
-                value={formData.type}
-                onChange={(e) => handleTypeChange(e.target.value as 'earn' | 'redeem')}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none bg-white"
-              >
-                <option value="earn">{t('redeemPoints.earn') || 'Earn Points'}</option>
-                <option value="redeem">{t('redeemPoints.redeem') || 'Redeem Points'}</option>
-              </select>
-            </div>
-
-            {formData.type === 'redeem' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('redeemPoints.product') || 'Product'} {t('common.optional') || '(Optional)'}
-                </label>
-                <select
-                  value={selectedProductId}
-                  onChange={(e) => handleProductChange(e.target.value)}
-                  disabled={loadingProducts}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
-                >
-                  <option value="">
-                    {loadingProducts
-                      ? (t('common.loading') || 'Loading...')
-                      : (t('redeemPoints.selectProduct') || 'Select a product')}
-                  </option>
-                  {products.map((product) => (
-                    <option key={product.id} value={product.id}>
-                      {product.name} - {product.redeemPoints} {t('redeemPoints.redeemPoints')}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('redeemPoints.invoiceNumber')} *
-              </label>
-              <input
-                type="text"
-                value={formData.invoiceNumber}
-                onChange={(e) => setFormData(prev => ({ ...prev, invoiceNumber: e.target.value }))}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('redeemPoints.customerId') || 'Customer ID'}
-              </label>
-              <input
-                type="text"
-                value={customer?.id || ''}
-                readOnly
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed outline-none"
-              />
-            </div>
-
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('redeemPoints.redeemPoints') || 'Redeem Points'} *
-              </label>
-              <input
-                type="text"
-                value={formData.redeem_points}
-                onChange={(e) => setFormData(prev => ({ ...prev, redeem_points: e.target.value }))}
-                readOnly={!!selectedProductId}
-                required
-                className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none ${
-                  selectedProductId ? 'bg-gray-50 cursor-not-allowed' : ''
-                }`}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('redeemPoints.date')} *
-              </label>
-              <input
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('redeemPoints.time')} *
-              </label>
-              <input
-                type="time"
-                value={formData.time}
-                onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('redeemPoints.notes') || 'Notes (Optional)'}
-            </label>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none resize-none"
-              placeholder={t('redeemPoints.notesPlaceholder') || 'Add any additional notes...'}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('redeemPoints.uploadInvoice')}
-            </label>
-            <div className="flex flex-col gap-4">
-              <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-purple-500 transition-colors">
-                <Upload size={20} className="text-gray-500" />
-                <span className="text-gray-600">{t('redeemPoints.uploadInvoice')}</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-              </label>
-              {invoicePreview && (
-                <div className="relative">
-                  <img src={invoicePreview} alt="Invoice preview" className="max-w-full h-[100px] rounded-lg border border-gray-300" />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setInvoicePreview(null);
-                      setFormData(prev => ({ ...prev, invoiceImage: null }));
-                    }}
-                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="flex-1 bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submitting ? (t('common.loading') || 'Processing...') : (t('redeemPoints.submit') || 'Submit')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setCustomer(null);
-                setIsVerified(false);
-                setFormData({
-                  invoiceNumber: '',
-                  companyId: formData.companyId,
-                  type: 'earn',
-                  redeem_points: '',
-                  date: new Date().toISOString().split('T')[0],
-                  time: new Date().toTimeString().slice(0, 5),
-                  invoiceImage: null,
-                  notes: '',
-                });
-                setInvoicePreview(null);
-                setLinkedCompanies([]);
-                setSelectedProductId('');
-                setSubmitError('');
-              }}
-              className="px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-all"
-            >
-              {t('redeemPoints.cancel')}
-            </button>
-          </div>
-
-          <InvoiceScannerModal
-            open={showInvoiceScanner}
-            onClose={() => setShowInvoiceScanner(false)}
-            onApply={handleApplyScannedInvoice}
-          />
-        </form>
+          }
+        />
       )}
 
       {verificationError && (
