@@ -492,9 +492,15 @@ const RedeemPoints = () => {
   };
 
   const handleApplyScannedInvoice = (result: InvoiceScanResult, imageFile: File) => {
+    // A scanned amount is independent of any selected product, so clear the
+    // product selection so the redeem_points field becomes editable again.
+    if (result.amount !== null) {
+      setSelectedProductId('');
+    }
     setFormData(prev => ({
       ...prev,
       invoiceNumber: result.invoiceNumber || prev.invoiceNumber,
+      redeem_points: result.amount !== null ? result.amount.toString() : prev.redeem_points,
       invoiceImage: imageFile,
     }));
     const reader = new FileReader();
