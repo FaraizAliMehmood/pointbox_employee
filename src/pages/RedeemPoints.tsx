@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { Search, QrCode, CheckCircle2, XCircle, Upload, X, Camera } from 'lucide-react';
+import { Search, QrCode, CheckCircle2, XCircle, Upload, X, Camera, Sparkles } from 'lucide-react';
 import { employeeApiService, type InvoiceScanResult } from '../services/apiService';
 import CustomDialog from '../components/CustomDialog';
 import InvoiceScannerModal from '../components/InvoiceScannerModal';
@@ -63,7 +63,7 @@ const RedeemPoints = () => {
   if (!hasPermission('manageTransactions')) {
     return <PermissionDenied />;
   }
-  const [searchMethod, setSearchMethod] = useState<'phone' | 'qr'>('phone');
+  const [searchMethod, setSearchMethod] = useState<'phone' | 'qr' | 'ai'>('phone');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [isVerified, setIsVerified] = useState(false);
@@ -100,6 +100,7 @@ const RedeemPoints = () => {
 
   const [invoicePreview, setInvoicePreview] = useState<string | null>(null);
   const [showInvoiceScanner, setShowInvoiceScanner] = useState(false);
+  const [showAIScanner, setShowAIScanner] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -144,15 +145,15 @@ const RedeemPoints = () => {
     fetchProducts();
   }, [isVerified, user?.companyId]);
 
-  const handlePhoneSearch = async () => {
-    if (!user || !phoneNumber.trim()) return;
-    
+  const verifyCustomerByPhone = async (phone: string) => {
+    if (!user || !phone.trim()) return;
+
     setVerificationError('');
     setCustomer(null);
     setIsVerified(false);
-    
+
     try {
-      const response = await employeeApiService.verifyCustomer(phoneNumber.trim());
+      const response = await employeeApiService.verifyCustomer(phone.trim());
       
       if (response.success && response.customer && response.customer.isLinked) {
         // Map API response to Customer type
@@ -202,6 +203,10 @@ const RedeemPoints = () => {
       setCustomer(null);
       setIsVerified(false);
     }
+  };
+
+  const handlePhoneSearch = async () => {
+    await verifyCustomerByPhone(phoneNumber);
   };
 
   // Checks the browser's camera permission state using the Permissions API.
@@ -511,6 +516,38 @@ const RedeemPoints = () => {
     setShowInvoiceScanner(false);
   };
 
+  const handleApplyAIScan = (result: InvoiceScanResult, imageFile: File) => {
+    setShowAIScanner(false);
+
+    const scannedPhone = result.phoneNumbers[0];
+    if (!scannedPhone) {
+      setVerificationError(
+        t('redeemPoints.noPhoneDetected') || 'No phone number detected on the invoice. Please try again or search by phone.'
+      );
+      return;
+    }
+
+    setPhoneNumber(scannedPhone);
+
+    // Pre-fill invoice details so the employee doesn't need to scan again in the form
+    if (result.amount !== null) {
+      setSelectedProductId('');
+    }
+    setFormData(prev => ({
+      ...prev,
+      invoiceNumber: result.invoiceNumber || prev.invoiceNumber,
+      redeem_points: result.amount !== null ? result.amount.toString() : prev.redeem_points,
+      invoiceImage: imageFile,
+    }));
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setInvoicePreview(reader.result as string);
+    };
+    reader.readAsDataURL(imageFile);
+
+    verifyCustomerByPhone(scannedPhone);
+  };
+
   const handleTypeChange = (type: 'earn' | 'redeem') => {
     setFormData(prev => ({
       ...prev,
@@ -658,6 +695,26 @@ const RedeemPoints = () => {
         >
           {t('redeemPoints.byQR')}
         </button>
+        <button
+          onClick={async () => {
+            if (isScanning) {
+              await stopQRScan();
+            }
+            setSearchMethod('ai');
+            setVerificationError('');
+            setCameraError('');
+            setCustomer(null);
+            setIsVerified(false);
+            setLinkedCompanies([]);
+          }}
+          className={`px-4 py-2 font-medium transition-colors ${
+            searchMethod === 'ai'
+              ? 'border-b-2 border-purple-600 text-purple-600'
+              : 'text-gray-600 hover:text-gray-800'
+          }`}
+        >
+          {t('redeemPoints.byAI') || 'Scan By AI'}
+        </button>
       </div>
 
       {/* Phone Search */}
@@ -719,6 +776,31 @@ const RedeemPoints = () => {
               </>
             )}
           </div>
+        </div>
+      )}
+
+      {/* AI Invoice Scan */}
+      {searchMethod === 'ai' && (
+        <div className="relative bg-white rounded-lg shadow-md p-4 lg:p-6">
+          <div className="flex flex-col items-center gap-4">
+            <button
+              onClick={() => setShowAIScanner(true)}
+              className="bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all flex items-center gap-2"
+            >
+              <Sparkles size={20} />
+              {t('redeemPoints.scanByAI') || 'Scan Invoice with AI'}
+            </button>
+            <p className="text-sm text-gray-500 text-center max-w-md">
+              {t('redeemPoints.scanByAIHint') ||
+                'Scan the customer\'s invoice to automatically find their phone number and pre-fill the invoice details.'}
+            </p>
+          </div>
+
+          <InvoiceScannerModal
+            open={showAIScanner}
+            onClose={() => setShowAIScanner(false)}
+            onApply={handleApplyAIScan}
+          />
         </div>
       )}
 
