@@ -774,7 +774,7 @@ const RedeemPoints = () => {
 
       {/* Redeem Form */}
       {customer && isVerified && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-4 lg:p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="relative bg-white rounded-lg shadow-md p-4 lg:p-6 space-y-6">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-xl font-bold text-gray-800">{t('redeemPoints.title')}</h2>
             <button
@@ -983,6 +983,12 @@ const RedeemPoints = () => {
               {t('redeemPoints.cancel')}
             </button>
           </div>
+
+          <InvoiceScannerModal
+            open={showInvoiceScanner}
+            onClose={() => setShowInvoiceScanner(false)}
+            onApply={handleApplyScannedInvoice}
+          />
         </form>
       )}
 
@@ -1051,12 +1057,6 @@ const RedeemPoints = () => {
           </div>
         </div>
       )}
-
-      <InvoiceScannerModal
-        open={showInvoiceScanner}
-        onClose={() => setShowInvoiceScanner(false)}
-        onApply={handleApplyScannedInvoice}
-      />
 
       <CustomDialog
         open={dialogOpen}

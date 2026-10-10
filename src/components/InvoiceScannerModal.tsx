@@ -174,7 +174,7 @@ const InvoiceScannerModal = ({ open, onClose, onApply }: InvoiceScannerModalProp
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 p-4 rounded-lg">
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden">
         <div className="px-6 py-4 bg-purple-50 border-b border-purple-100 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-purple-700">
