@@ -44,6 +44,7 @@
     "scanByAIHint": "Escanee la factura del cliente para encontrar automáticamente su número de teléfono y completar los detalles de la factura.",
     "aiPrefilledHint": "El número de factura y el monto se completaron automáticamente con el escaneo de IA. Verifique antes de enviar.",
     "noPhoneDetected": "No se detectó ningún número de teléfono en la factura. Intente nuevamente o busque por teléfono.",
+    "selectCustomerPhone": "Se encontraron varios números de teléfono en esta factura. Seleccione el número del cliente:",
     "customerInfo": "Información del cliente",
     "verifyCustomer": "Verificar cliente",
     "customerVerified": "Cliente verificado",

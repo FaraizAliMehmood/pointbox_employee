@@ -101,6 +101,8 @@ const RedeemPoints = () => {
 
   const [invoicePreview, setInvoicePreview] = useState<string | null>(null);
   const [showAIScanner, setShowAIScanner] = useState(false);
+  const [phoneCandidates, setPhoneCandidates] = useState<string[]>([]);
+  const [pendingAIScan, setPendingAIScan] = useState<{ result: InvoiceScanResult; imageFile: File } | null>(null);
 
   useEffect(() => {
     return () => {
@@ -496,18 +498,8 @@ const RedeemPoints = () => {
     }
   };
 
-  const handleApplyAIScan = (result: InvoiceScanResult, imageFile: File) => {
-    setShowAIScanner(false);
-
-    const scannedPhone = result.phoneNumbers[0];
-    if (!scannedPhone) {
-      setVerificationError(
-        t('redeemPoints.noPhoneDetected') || 'No phone number detected on the invoice. Please try again or search by phone.'
-      );
-      return;
-    }
-
-    setPhoneNumber(scannedPhone);
+  const applyScannedInvoiceData = (phone: string, result: InvoiceScanResult, imageFile: File) => {
+    setPhoneNumber(phone);
 
     // Pre-fill invoice details so the employee doesn't need to scan again in the form
     if (result.amount !== null) {
@@ -525,7 +517,43 @@ const RedeemPoints = () => {
     };
     reader.readAsDataURL(imageFile);
 
-    verifyCustomerByPhone(scannedPhone);
+    verifyCustomerByPhone(phone);
+  };
+
+  const handleApplyAIScan = (result: InvoiceScanResult, imageFile: File) => {
+    setShowAIScanner(false);
+    setVerificationError('');
+
+    // Prefer the number the AI confidently attributed to the customer. Only fall
+    // back to guessing when there is exactly one phone number on the invoice -
+    // otherwise ask the employee to pick, since the wrong pick (e.g. the store's
+    // own contact number) silently searches for the wrong customer.
+    if (result.customerPhoneNumber) {
+      applyScannedInvoiceData(result.customerPhoneNumber, result, imageFile);
+      return;
+    }
+
+    if (result.phoneNumbers.length === 1) {
+      applyScannedInvoiceData(result.phoneNumbers[0], result, imageFile);
+      return;
+    }
+
+    if (result.phoneNumbers.length > 1) {
+      setPendingAIScan({ result, imageFile });
+      setPhoneCandidates(result.phoneNumbers);
+      return;
+    }
+
+    setVerificationError(
+      t('redeemPoints.noPhoneDetected') || 'No phone number detected on the invoice. Please try again or search by phone.'
+    );
+  };
+
+  const handleSelectScannedPhone = (phone: string) => {
+    if (!pendingAIScan) return;
+    applyScannedInvoiceData(phone, pendingAIScan.result, pendingAIScan.imageFile);
+    setPhoneCandidates([]);
+    setPendingAIScan(null);
   };
 
   const handleCancelForm = () => {
@@ -668,6 +696,8 @@ const RedeemPoints = () => {
             setCustomer(null);
             setIsVerified(false);
             setLinkedCompanies([]);
+            setPhoneCandidates([]);
+            setPendingAIScan(null);
           }}
           className={`px-4 py-2 font-medium transition-colors ${
             searchMethod === 'phone'
@@ -685,6 +715,8 @@ const RedeemPoints = () => {
             setCustomer(null);
             setIsVerified(false);
             setLinkedCompanies([]);
+            setPhoneCandidates([]);
+            setPendingAIScan(null);
           }}
           className={`px-4 py-2 font-medium transition-colors ${
             searchMethod === 'qr'
@@ -793,6 +825,37 @@ const RedeemPoints = () => {
               {t('redeemPoints.scanByAIHint') ||
                 'Scan the customer\'s invoice to automatically find their phone number and pre-fill the invoice details.'}
             </p>
+
+            {phoneCandidates.length > 0 && (
+              <div className="w-full max-w-md bg-yellow-50 border border-yellow-200 rounded-lg p-4 space-y-3">
+                <p className="text-sm text-yellow-800 font-medium">
+                  {t('redeemPoints.selectCustomerPhone') ||
+                    "Multiple phone numbers were found on this invoice. Select the customer's number:"}
+                </p>
+                <div className="flex flex-col gap-2">
+                  {phoneCandidates.map((phone) => (
+                    <button
+                      key={phone}
+                      type="button"
+                      onClick={() => handleSelectScannedPhone(phone)}
+                      className="px-4 py-2 border border-yellow-300 bg-white rounded-lg text-left font-medium text-gray-800 hover:bg-yellow-100 transition-colors"
+                    >
+                      {phone}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPhoneCandidates([]);
+                    setPendingAIScan(null);
+                  }}
+                  className="text-sm text-gray-500 hover:text-gray-700"
+                >
+                  {t('common.cancel') || 'Cancel'}
+                </button>
+              </div>
+            )}
           </div>
 
           <InvoiceScannerModal

@@ -37,6 +37,7 @@ interface LoginResponse {
 export interface InvoiceScanResult {
   invoiceNumber: string | null;
   phoneNumbers: string[];
+  customerPhoneNumber: string | null;
   amount: number | null;
   currency: string | null;
   amountLabel: string | null;

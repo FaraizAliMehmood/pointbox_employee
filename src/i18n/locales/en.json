@@ -44,6 +44,7 @@
     "scanByAIHint": "Scan the customer's invoice to automatically find their phone number and pre-fill the invoice details.",
     "aiPrefilledHint": "Invoice number and amount were auto-filled from your AI scan. Please verify before submitting.",
     "noPhoneDetected": "No phone number detected on the invoice. Please try again or search by phone.",
+    "selectCustomerPhone": "Multiple phone numbers were found on this invoice. Select the customer's number:",
     "customerInfo": "Customer Information",
     "verifyCustomer": "Verify Customer",
     "customerVerified": "Customer Verified",
