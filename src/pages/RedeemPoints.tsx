@@ -615,11 +615,11 @@ const RedeemPoints = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">{t('redeemPoints.title')}</h1>
         <button
           onClick={() => setShowInvoiceScanner(true)}
-          className="bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 text-white px-4 py-2.5 rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 self-start sm:self-auto"
+          className="bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap shrink-0"
         >
           <Camera size={18} />
           Scan Invoice
